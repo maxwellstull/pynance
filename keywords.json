@@ -1,1 +1,82 @@
-{"Income": {"Paycheck": [], "Received": [], "Interest": [], "Other": []}, "Home": {"Rent": [], "Utilities": [], "Storage Unit": [], "Renters Insurance": [], "Other": []}, "Transportation": {"Auto Loan": [], "Parking": [], "Gas": [], "Maintenance": [], "Car Insurance": [], "Registration Fees": [], "Fares": [], "Other": []}, "Shopping": {"Grocery": [], "Goods": [], "Health": [], "Trinkets": [], "Furniture": []}, "Entertainment": {"Dining Out": [], "Going Out": [], "Fitness": [], "Hobbies": [], "Subscriptions": []}, "Saving": {"General": [], "Specific": []}, "Omit": {"Work Recompensation": [], "Other": []}}
+{
+    "Income": {
+        "Paycheck": [
+            "DIR DEP"
+        ],
+        "Received": [],
+        "Interest": [
+            "DIVIDEND"
+        ],
+        "Other": []
+    },
+    "Home": {
+        "Rent": [
+            "LAKEVWOP"
+        ],
+        "Utilities": [],
+        "Storage Unit": [],
+        "Renters Insurance": [],
+        "Other": []
+    },
+    "Transportation": {
+        "Auto Loan": [],
+        "Parking": [],
+        "Gas": [
+            "CIRCLE K"
+        ],
+        "Maintenance": [],
+        "Car Insurance": [],
+        "Registration Fees": [],
+        "Fares": [
+            "UBER"
+        ],
+        "Other": []
+    },
+    "Shopping": {
+        "Grocery": [
+            "JEWEL OSCO",
+            "COSTCO",
+            "TRADER JOE'S",
+            "TRADER JOE"
+        ],
+        "Goods": [
+            "TARGET",
+            "AMAZON"
+        ],
+        "Health": [
+            "WALGREENS"
+        ],
+        "Trinkets": [],
+        "Furniture": []
+    },
+    "Entertainment": {
+        "Dining Out": [
+            "TACO BELL",
+            "QDOBA",
+            "AUNTIE ANNES",
+            "CHICK-FIL-A",
+            "DUNKIN",
+            "RAISING CANES",
+            "JOLLY PUMPKIN"
+        ],
+        "Going Out": [],
+        "Fitness": [],
+        "Hobbies": [
+            "MICROSOFT*ULTIMATE"
+        ],
+        "Subscriptions": [
+            "SPOTIFY",
+            "MICROSOFT*MICROSOFT 365 B"
+        ]
+    },
+    "Saving": {
+        "General": [
+            "ACORNS"
+        ],
+        "Specific": []
+    },
+    "Omit": {
+        "Work Recompensation": [],
+        "Other": []
+    }
+}

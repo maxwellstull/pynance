@@ -190,10 +190,28 @@ class Database():
                 continue 
 
         
-            print("No association:", entry)
-
+            print("No Association: ", entry)
+            keys = list(categories.keys())
+            keys.append("SPLIT")
+            for key in keys:
+                print("| {:^8.8}".format(key), end=" ")
+            print("|")
+            for i in range(0,len(keys)):
+                print("|    {:}    ".format(i), end=" ")
+            print("|")
+            user_in = input("Category numbers: ")
             
-        pass
+
+
+"""
+1. Print categories and numbers 1-n
+2. user inputs number for category, or "S" if transaction should be split
+3. print out subcategories and numbers
+4. user inputs number for subcategory
+5. Ask if any keywords should be added
+6. User inputs keywords
+
+"""
 
 
 
