@@ -1,4 +1,13 @@
 # pynance
+Pynance is a program intended to provide personal finance utilities that I cannot find elsewhere.
+## Features
+- Importing bank statements
+    - Import bank statements
+    - Not import duplicate entries if running multiple times or with savedata
+    - Functionality to "show" how to import unfamiliar statements
+- Automatic grouping into spending categories
+    - Use of keywords
+    - 
 
 
 ## Intended Function
