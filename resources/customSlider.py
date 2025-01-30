@@ -1,113 +1,280 @@
 from tkinter import *
-from tkinter.ttk import *
+from PIL import Image,ImageTk
+
+class Slider():
+    def __init__(self, canvas, radius,x,y):
+        self.canvas = canvas
+        self.radius = radius
+        self.x = x 
+        self.y = y
+        self.id = None
+        self.l_segment = None 
+        self.r_segment = None
+        
+    def check_hit(self, x):
+        if self.x - self.radius <= x and x <= self.x + self.radius:
+            return True 
+        return False
+    
+    def draw_self(self):
+        self.id = self.canvas.create_oval(self.x - self.radius, self.y- self.radius, self.x + self.radius, self.y + self.radius,fill='blue')
+        return self.id
+    
+    def move(self, new_x):
+        self.x = new_x
+        self.canvas.coords(self.id, self.x - self.radius, self.y- self.radius, self.x + self.radius, self.y + self.radius)
+        
+        
+class Segment():
+    def __init__(self, parent, l_slider, r_slider, color):
+        self.frame = Frame()
+        
+        self.parent = parent
+        self.canvas = parent.canvas
+       
+        self.l_slider = l_slider
+        self.r_slider = r_slider
+        
+        if self.l_slider:
+            self.x_l = self.l_slider.x
+        else:
+            self.x_l = 25
+        if self.r_slider:
+            self.x_r = self.r_slider.x 
+        else:
+            self.x_r = self.parent.width - 25
+            
+        self.locked = False            
+            
+        self.percentage = round(((self.x_r - self.x_l) / (self.parent.width - 50))*100,1)
+        print(self.percentage)
+        self.color = color
+        self.color_line_id = None 
+
+        self.lock_id = None
+        icon = Image.open("C:/Users/maxws/Documents/Code/pynance/resources/img/lock.png")
+        scaled_image = icon.resize((10, 10))
+        self.icon = ImageTk.PhotoImage(scaled_image)
+        
+        
+        self.entry = Entry(self.frame, width=20, bg=self.color)
+        self.entry.insert(0, "0")
+        self.entry.bind("<Return>", lambda e,s=self: self.parent.update_sliders_from_perc_entry(e,s))
+        self.entry.grid(row=0, column=0)
+        
+        self.money_entry = Entry(self.frame, width=20, bg=self.color)
+        self.money_entry.insert(0, "0")
+        self.money_entry.bind("<Return>", lambda e,s=self: self.parent.update_sliders_from_money_entry(e,s))
+        self.money_entry.grid(row=0,column=1)
+        
+        option_list = []
+        supercategory_list = []
+        for supercategory,categories in self.parent.categories.items():
+            option_list.append("---" + str(supercategory) + "---")
+            supercategory_list.append(supercategory)
+            for category in categories:
+                option_list.append(category)
+        self.selected = StringVar(self.frame)
+        self.selected.set("Select category")
+        self.dropdown = OptionMenu(self.frame, self.selected, *option_list,command=self.update_supercategory)
+        self.dropdown.grid(row=0,column=2)
+        
+        self.supercategory_selected = StringVar(self.frame)
+        self.supercategory_selected.set("Need/Want")
+        self.supercategory_dropdown = OptionMenu(self.frame, self.supercategory_selected, *supercategory_list)
+        self.supercategory_dropdown.grid(row=0,column=3)
+    def update_supercategory(self,value):
+        for supercategory,categories in self.parent.categories.items():
+            if value in categories:
+                self.supercategory_selected.set(supercategory)
+                
+    def draw_self(self):
+        if self.l_slider:
+            self.x_l = self.l_slider.x
+        else:
+            self.x_l = 25
+        if self.r_slider:
+            self.x_r = self.r_slider.x
+        else:
+            self.x_r = self.parent.width - 25
+        
+        self.percentage = round(((self.x_r - self.x_l) / (self.parent.width - 50))*100,1)
+        
+#        self.label_id = self.canvas.create_text(mid_x, self.parent.height/2, text=self.label_str)
+        self.color_line_id = self.canvas.create_line(self.x_l, self.parent.height/2, self.x_r, self.parent.height/2, width=8, fill=self.color)
+        if self.locked:
+            self.lock_id = self.canvas.create_image(((self.x_r-self.x_l)/2) + self.x_l,self.parent.height/2,image=self.icon,anchor=CENTER)
+
+        self.entry.delete(0,END)
+        self.entry.insert(0, f"{self.percentage}")
+        dollars = round(self.parent.fin_entry.debit*self.percentage/100,2)
+        self.money_entry.delete(0,END)
+        self.money_entry.insert(0,f"${dollars}")
+    def new_r_slider(self, slider):
+        self.r_slider = slider
+        self.x_r = self.r_slider.x
+    def get_transaction_amount(self):
+        pass
 
 class Slider2(Frame):
     OVAL_RADIUS = 10
     LINE_THICKNESS = 10
     
     
-    def __init__(self, window, width=800, height=100):
+    def __init__(self, window,entry, categories,width=800, height=100):
         Frame.__init__(self, window, height=height, width=width)
         self.window = window
         min_val = 0
         max_val = 100
         self.width = width 
         self.height = height 
+#        self.letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+#        self.letter_ctr = 0
+        self.colors=["OliveDrab1","SkyBlue4","medium purple","PaleVioletRed4"]
+        self.color_ctr = 0
         
         self.canvas = Canvas(self, height=height, width=width)
         self.canvas.create_line(25, height/2, width-25, height/2, width=Slider2.LINE_THICKNESS,fill='deep sky blue')
-        
-        self.sliders = []
-        self.slider_handles = []
-        self.letter_handles = []
-        self.percentage_entries = []
+        self.canvas.create_rectangle(3,3,width-3,height-3,width=1)
         self.canvas.bind("<Button-1>", self.add_slider)
-        self.letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        self.canvas.pack()
+        self.canvas.grid(row=0,column=0)
+        
+        self.segments = []
+        self.sliders = []
+        self.fin_entry = entry
+        self.categories = categories
+        
+        seg = Segment(self, None, None,self.colors[self.color_ctr])
+        self.color_ctr+=1
+        seg.frame.grid(column=0, row=2)
+        seg.draw_self()
+        self.segments.append(seg)
+
+#        self.grid(row=3,column=0)
+        
+
+
+    def set_financial_entry(self, ent):
+        self.fin_entry = ent   
+        print(ent)
+
+        
 
     def add_slider(self, event):
+        # Bypass this function if we've clicked on a slider
         for slider in self.sliders:
-            if event.x > slider - Slider2.OVAL_RADIUS  and event.x < slider + Slider2.OVAL_RADIUS:
+            if slider.check_hit(event.x):
                 return 
         
-        x = event.x
-        self.sliders.append(x)
-        slider = self.canvas.create_oval(x-Slider2.OVAL_RADIUS, self.height / 2 - Slider2.OVAL_RADIUS, x+Slider2.OVAL_RADIUS, self.height / 2 + Slider2.OVAL_RADIUS,fill='blue')
-        self.slider_handles.append(slider)
-        self.canvas.tag_bind(slider, "<B1-Motion>", lambda e, s=slider: self.move_slider(e,s))
-        self.sliders.sort()
-        print(self.sliders)
+        slider = Slider(self.canvas, Slider2.OVAL_RADIUS, event.x, self.height / 2)
+        slider_id = slider.draw_self()
+        self.canvas.tag_bind(slider_id, "<B1-Motion>", lambda e, s=slider: self.move_slider(e,s))
+        self.sliders.append(slider)
+        
+        # need to split the segment
+        for segment in self.segments:
+            if segment.x_l < event.x and event.x < segment.x_r:
+                print("You clicked on segment:" + segment.color)
+                # clicked within this segment
+                new_seg = Segment(self, slider, segment.r_slider,self.colors[self.color_ctr])
+                self.color_ctr+=1
+                segment.new_r_slider(slider)
+                self.segments.append(new_seg)
+                new_seg.frame.grid(column=0,row=len(self.segments)+1)
+                
+                slider.l_segment = segment 
+                slider.r_segment = new_seg
+                break
+        
         self.update_labels_and_entries()
     def move_slider(self, event, slider):
-        x = max(10, min(event.x, self.width - 10))
-        self.canvas.coords(slider, x - Slider2.OVAL_RADIUS, self.height // 2 - Slider2.OVAL_RADIUS, x + Slider2.OVAL_RADIUS, self.height // 2 + Slider2.OVAL_RADIUS)
-        index = self.slider_handles.index(slider)
-        self.sliders[index] = x
-        self.sliders.sort()
+        x = max(25, min(event.x, self.width - 25)) 
+        # check if we are traveling left over another slider
+        if x < slider.l_segment.x_l + 2:
+            x = slider.l_segment.x_l + 2
+        # check if we are traveling right over another slider
+        if x > slider.r_segment.x_r - 2:
+            x = slider.r_segment.x_r - 2
+        # move da slider
+        slider.move(x)
+        # unlock the affected segments
+        slider.l_segment.locked = False 
+        slider.r_segment.locked = False
+        #
+        
+        
         self.update_labels_and_entries()
         
-    def update_percentages(self):
-        self.clear_labels()
-        positions = [25] + self.sliders + [self.width - 25]
-        total_width = self.width - 50
-        
-        for i in range(len(positions) - 1):
-            percentage = round((positions[i+1] - positions[i]) / total_width * 100, 1)
-            mid_x = (positions[i] + positions[i+1]) / 2
-            
-            label_id = self.canvas.create_text(mid_x, self.height / 2, text=f"{percentage}%")
-            self.labels.append(label_id)
-    
     def update_labels_and_entries(self):
-        self.clear_labels_and_entries()
+        self.clear_segments()
 
-        positions = [25] + self.sliders + [self.width - 25]
-        total_width = self.width - 50
-        
-        for i in range(len(positions) -1):
-            letter = self.letters[i]
-            mid_x = (positions[i] + positions[i+1]) /2
-            percentage = round((positions[i+1] - positions[i]) / total_width * 100, 1)
-            
-            letter_id = self.canvas.create_text(mid_x, self.height/2, text=letter)
-            self.letter_handles.append(letter_id)
-            
-            entry = Entry(self, width=20)
-            entry.insert(0, f"{percentage}")
-            entry.bind("<Return>", lambda e, idx=i: self.update_sliders_from_entry(idx))
-            entry.pack()
-#            entry.grid(row=1, column=i, padx=5)
-            
-            self.percentage_entries.append(entry)
+        for segment in self.segments:
+            segment.draw_self()
+        for slider in self.sliders:
+            self.canvas.tag_raise(slider.id)
     
-    def update_sliders_from_entry(self, index):
-        try:
-            new_percentage = float(self.percentage_entries[index].get()) / 100
-            total_width = self.width - 50
-            new_x = int(new_percentage * total_width) + 25
-        
-            if index > 0 and new_x <= self.sliders[index - 1]:
-                return 
-            if index < len(self.sliders) and new_x >= self.sliders[index +1]:
-                return 
+    def update_sliders_from_perc_entry(self, event, segment):
+#        try:
+#            new_percentage = float(self.percentage_entries[index].get()) / 100
+#            total_width = self.width - 50
+#            new_x = int(new_percentage * total_width) + 25
+            #if index > 0 and new_x <= self.sliders[index - 1]:
+            #    return 
+            #if index < len(self.sliders) and new_x >= self.sliders[index +1]:
+            #    return 
             
-            self.sliders[index] = new_x 
-            self.canvas.coords(self.slider_handles[index], new_x-Slider2.OVAL_RADIUS, self.height/2 - Slider2.OVAL_RADIUS,new_x+Slider2.OVAL_RADIUS, self.height/ 2 + Slider2.OVAL_RADIUS)
+#            self.sliders[index] = new_x 
+#            self.canvas.coords(self.slider_handles[index], new_x-Slider2.OVAL_RADIUS, self.height/2 - Slider2.OVAL_RADIUS,new_x+Slider2.OVAL_RADIUS, self.height/ 2 + Slider2.OVAL_RADIUS)
             
-            self.update_labels_and_entries()
-        except ValueError:
-            print("Shit")
-            pass
-    def clear_labels(self):
-        for label in self.labels:
-            self.canvas.delete(label)
-        self.labels.clear()
+#            self.update_labels_and_entries()
+#        except ValueError:
+#            print("Shit")
+#            pass
+
+        print(event)
+        print(segment)
+        print(segment.entry.get())
         
-    def clear_labels_and_entries(self):
-        for label in self.letter_handles:
-            self.canvas.delete(label)
-        self.letter_handles.clear()
+        total_width = self.width - 50
+        unlocked_segments = []
+        for test_segment in self.segments:
+            if test_segment is segment:
+                continue
+            else:
+                if test_segment.locked == True:
+                    continue
+                else:
+                    unlocked_segments.append(test_segment)
         
-        for entry in self.percentage_entries:
-            entry.destroy()
-        self.percentage_entries.clear()
+        match len(unlocked_segments):
+            case 0:
+                if len(self.segments) == 2:
+                    print("I dont think so mafucka")
+                    pass
+                else:
+                    # Functionality: make a new segment that has the correct value
+                    x_should_be = (float(segment.entry.get())*total_width/100)+25
+                    event.x = x_should_be
+                    self.add_slider(event)
+                    segment.locked = True
+                
+            case 1:
+                # Functionality: move the one segment 
+                x_should_be=0
+                other_segment = unlocked_segments[0]
+                if segment.l_slider is None: #its the left segment
+                    x_should_be = (float(segment.entry.get())*total_width/100)+25
+                    segment.r_slider.move(x_should_be)
+                if segment.r_slider is None: #its the right segment
+                    x_should_be = segment.x_r - ((float(segment.entry.get())*total_width/100))
+                    segment.l_slider.move(x_should_be)
+                segment.locked = True
+                self.update_labels_and_entries()
+        self.update_labels_and_entries()
+        
+    def clear_segments(self):
+        for segment in self.segments:
+            if segment.color_line_id:
+                self.canvas.delete(segment.color_line_id)
+            if segment.lock_id:
+                self.canvas.delete(segment.lock_id)

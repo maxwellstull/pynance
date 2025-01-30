@@ -1,0 +1,48 @@
+{
+    "Cutoff Date":"1/1/2022",
+
+
+    "Categories": {
+        "Needs": [
+            "Housing",
+            "Transport",
+            "Groceries",
+            "Utilities",
+            "Insurance",
+            "Medical",
+            "Government",
+            "Education"
+        ],
+        "Wants": [
+            "Shopping",
+            "Dining",
+            "Entertainment",
+            "Personal Spending",
+            "Allowance",
+            "Travel"
+        ],
+        "Savings & Debts": [
+            "Savings",
+            "Debts",
+            "Ommitted"
+        ]
+    },
+    "Ingest": {
+        "AccountHistory.csv": {
+            "institution": "Credit Union",
+            "date": "Post Date",
+            "description": "Description",
+            "debit": "Debit",
+            "credit": "Credit",
+            "date_fmt":"%m/%d/%Y"
+        },
+        "bigbank.CSV": {
+            "institution": "Big Bank",
+            "date": "Transaction Date",
+            "description": "Description",
+            "debit": "Amount",
+            "credit": "Amount",
+            "date_fmt":"%m/%d/%Y"
+        }
+    }
+}

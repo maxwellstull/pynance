@@ -1,135 +1,91 @@
-import pandas as pd
-import os
+import sys
+sys.path.append('resources')
+from customSlider import Slider2
 import json
-import datetime
+import csv
+import os 
 import math
-import hashlib
-#from enum import Enum
-
-
-class Entry():
-    def __init__(self, date, description, debit, credit, bank):
-        self.date = date
-        self.description = description
-        self.debit = debit
-        self.credit = credit
-        self.bank=bank 
-
-        self.category = None
-        self.subcategory = None
-        pass
-    
-    def __repr__(self):
-        return """
-{bank} - {date}
-{desc}
-Debit: {db}
-Credit: {cr}
-""".format(bank = self.bank, date = self.date, desc = self.description, db=self.debit,cr=self.credit)
-    
-    def save_json(self):
-        return {"Date":self.date,
-                "Description":self.description,
-                "Debit":self.debit,
-                "Credit":self.credit,
-                "Bank":self.bank,
-                "Category":self.category,
-                "Subcategory":self.subcategory,}
-    
-    def load_json(self, data):
-        # Initializer has already been ran, just need any additional information that gets added
-        self.category = data["Category"]
-        self.subcategory = data["Subcategory"]
-
-    def generate_hash(self):
-        return abs(hash((str(self.date) + self.description)))
-
-categories = {
-    "Income":["Paycheck","Received","Interest","Other"],
-    "Home":["Rent","Utilities","Storage Unit","Renters Insurance","Other"],
-    "Transportation":["Auto Loan","Parking","Gas","Maintenance","Car Insurance","Registration Fees","Fares","Other"],
-    "Shopping":["Grocery","Goods","Health","Trinkets","Furniture",],
-    "Entertainment":["Dining Out","Going Out","Fitness","Hobbies","Subscriptions"],
-    "Saving":["General","Specific"],
-    "Omit":["Work Recompensation","Other"]
-}
-class Database():
+from objects import Entry
+import tkinter as tk
+from tkinter import filedialog
+import datetime
+class Pynance():
     def __init__(self):
-        df_setup = {"Date":[],"Description":[],"Debit":[],"Credit":[],"Bank":[]}
-        self.df = pd.DataFrame(df_setup)
         self.entries = []
-
-        self.category_keywords = {}
-
-    def fill_category_keywords(self):
-        for key, value in categories.items():
-            self.category_keywords[key] = {}
-            for item in value:
-                self.category_keywords[key][item] = []
-
-    def new_financial_information(self):
-        self.load_data()
-        self.read_files()
-        self.convert_dataframe_to_entries()
-        self.clean_entries()
-        self.clean_keywords()
-        self.remove_duplicate_entries()
-        self.remove_old_entries(2022)
-        self.sort_entries_by_date()
-        self.categorize()
-        self.save_data()
-
-    def read_files(self):
-        for file in os.listdir(os.getcwd()):
-            if ".csv" in file.lower():
-                df2 = pd.read_csv(file)
-                if "Chase" in file: #chase
-                    df3 = pd.DataFrame().assign(Date=df2["Transaction Date"],Description=df2["Description"],Debit=df2["Amount"],Credit=df2["Amount"],Bank="Chase")
-                elif "AccountHistory" in file: #advia
-                    df3 = pd.DataFrame().assign(Date=df2["Post Date"],Description=df2["Description"],Debit=df2["Debit"],Credit=df2["Credit"],Bank="Advia")
-                self.df = pd.concat([self.df, df3], ignore_index=True)
-
-    def convert_dataframe_to_entries(self):
-        for _index, row in self.df.iterrows():
-            new_entry = Entry(row["Date"],row["Description"],row["Debit"],row["Credit"],row["Bank"])
-            self.entries.append(new_entry)
-
-    def clean_entries(self):
+        
+        with open('settings.json','r') as fp:
+            settings = json.load(fp)
+        self.settings = settings
+        self.categories = settings['Categories']
+        self.ingest = settings['Ingest']
+        self.load_save_data('savedata.json')        
+        
+        
+    def load_save_data(self, path):
+        if not os.path.isfile(path):
+            print("Skipping loading save data. This is not a problem if there isn't any.")
+        else: #savedata.json exists
+            print("savedata exists")
+        
+        self.process_entry_updates()
+        
+    def import_account_history(self, filename):
+        if not os.path.isfile(filename):
+            print("Skipping reading file:" + filename + ". It doesn't exist?")
+        else:
+            # Figure out what ingest scheme to use
+            scheme = self.ingest[filename]
+                
+            with open(filename,'r') as fp:
+                reader = csv.reader(fp)
+                headers = next(reader)
+                # Figure out reading index from ingest config
+                date_idx = headers.index(scheme['date'])
+                description_idx = headers.index(scheme['description'])
+                debit_idx = headers.index(scheme['debit'])
+                credit_idx = headers.index(scheme['credit'])
+                
+                for row in reader:
+                    date = datetime.datetime.strptime(row[date_idx],scheme['date_fmt']).date()
+                    description = row[description_idx]
+                    debit = row[debit_idx]
+                    credit = row[credit_idx]
+                    bank = scheme['institution']
+                    
+                    entry = Entry(date, description, debit, credit, bank)
+                    self.entries.append(entry)
+        self.process_entry_updates()
+    def process_entry_updates(self):
+        # Clean entries
         for entry in self.entries:
+            if entry.clean == True:
+                continue
             if type(entry.date) == str:
                 date_obj = datetime.datetime.strptime(entry.date,"%m/%d/%Y").date()
                 entry.date = date_obj
-            if entry.debit == entry.credit: #implies they dont differentiate, need to do math
-                if entry.debit < 0: #ok, it is actually a debit
+            if (entry.debit - entry.credit) < 0.001 and entry.debit != 0:
+                if entry.debit < 0: #is actual debit
                     entry.debit = abs(entry.debit)
                     entry.credit = None
-            if entry.debit:
-                if math.isnan(entry.debit):
+                else: #entry.debit > 0
                     entry.debit = None
-            if entry.credit:
-                if math.isnan(entry.credit):
-                    entry.credit=None 
+
+#            if entry.debit:
+#                if math.isnan(entry.debit):
+#                    entry.debit = None
+#            if entry.credit:
+#                if math.isnan(entry.credit):
+#                    entry.credit = None
             entry.description = entry.description.upper()
-    
-    def remove_old_entries(self, cutoff=2022):
+            
+        # Remove old entries
         to_keep = []
         for entry in self.entries:
-            if entry.date.year >= cutoff:
+            if entry.date.year >= datetime.datetime.strptime(self.settings["Cutoff Date"],"%m/%d/%Y").year:
                 to_keep.append(entry)
         self.entries = to_keep
-            
-    def clean_keywords(self):
-        # make all keywords uppercase
-        for category, subcategory_dict in self.category_keywords.items():
-                for subcategory, keyword_list in subcategory_dict.items():
-                    for i in range(0, len(keyword_list)):
-                        keyword = self.category_keywords[category][subcategory][i]
-                        self.category_keywords[category][subcategory][i] = keyword.upper()
-                
-    def sort_entries_by_date(self):
-        self.entries.sort(key=lambda x: x.date,reverse=True)
-
-    def remove_duplicate_entries(self):
+    
+        # Remove duplicates
         to_keep = []
         hashmap = {}
         for entry in self.entries:
@@ -137,87 +93,65 @@ class Database():
             if hashbrown not in hashmap.keys():
                 hashmap[hashbrown] = True
                 to_keep.append(entry)
-            else:
-#                print("\n\nDuplicate found:",entry)
-                pass
         self.entries = to_keep
-
-    def load_data(self):
-        fp = open("savedata.json","r")
-        to_load = json.load(fp)
-        for entry_id, entry_data in to_load["Entries"].items():
-            clean_date = datetime.datetime.strptime(entry_data["Date"],"%Y-%m-%d").date()
-            new_entry = Entry(clean_date, entry_data["Description"],entry_data["Debit"],entry_data["Credit"],entry_data["Bank"],)
-            new_entry.load_json(entry_data)
-            self.entries.append(new_entry)
-
-        fp = open("keywords.json","r")
-        to_load = json.load(fp)
-        self.category_keywords = to_load
-
-    def save_data(self):
-        to_save = {}
-        to_save["Entries"] = {}
-        entry_id_ctr = 0
-        for entry in self.entries:
-            to_save["Entries"][entry_id_ctr] = entry.save_json()
-            entry_id_ctr += 1
-        with open("savedata.json","w") as fp:
-            json.dump(to_save, fp, default=str)
-        with open("keywords.json","w") as fp:
-            json.dump(self.category_keywords, fp, default=str)
-
-    def scan_category_list(self, entry):
-        for category, subcategory_dict in self.category_keywords.items():
-            for subcategory, keyword_list in subcategory_dict.items():
-                for keyword in keyword_list:
-                    if keyword.upper() in entry.description:
-                        entry.category = category
-                        entry.subcategory = subcategory
-                        return True
-        return False
-    def categorize(self):
-        for entry in self.entries:
-            if entry.category:
-                if entry.subcategory:
-                    continue
-            #Ok, here's where it gets rough. This is going to be slow and
-            # brute forced, but this isn't production software
-            ## TODO: once large amount of keywords, flip dictionary such that
-            ##   any lookup word is the key, and the value is the category
-            results = self.scan_category_list(entry)
-            if results == True:
-                continue 
-
         
-            print("No Association: ", entry)
-            keys = list(categories.keys())
-            keys.append("SPLIT")
-            for key in keys:
-                print("| {:^8.8}".format(key), end=" ")
-            print("|")
-            for i in range(0,len(keys)):
-                print("|    {:}    ".format(i), end=" ")
-            print("|")
-            user_in = input("Category numbers: ")
+    def save_data(self):
+        to_save = {"Entries":[]}
+        for entry in self.entries:
+            to_save['Entries'].append(entry.save_json())
+        with open('savedata.json','w') as fp:
+            json.dump(to_save, fp, default=str)
+    def load_json(self):
+        with open('savedata.json','r') as fp:
+            to_load = json.load(fp)
+            for entry in to_load['Entries']:
+                entry_obj = Entry([entry['Date'],entry['Description'],entry['Debit'],entry['Credit'],entry['Bank']])
+                entry_obj.load_json(entry)
+
+    def get_most_recent_uncategorized_entry(self):
+        self.entries.sort(key=lambda x: x.date, reverse=True)
+        for entry in self.entries:
+            if entry.categorized != True:
+                return entry
+
+
+class PynanceFramer():
+    def __init__(self, root):
+        self.root = root 
+        self.pynance = None
+        
+        self.category_frame = None
+        self.is_visible = False 
+    def toggle_categorization(self):
+        self.is_visible = not self.is_visible
+        if self.is_visible:
+            self.category_frame = tk.Frame(self.root)
+            self.category_frame.grid(row=1,column=0)
             
-
-
-"""
-1. Print categories and numbers 1-n
-2. user inputs number for category, or "S" if transaction should be split
-3. print out subcategories and numbers
-4. user inputs number for subcategory
-5. Ask if any keywords should be added
-6. User inputs keywords
-
-"""
-
-
-
-
-
-
-
-db = Database()
-db.new_financial_information()
+            self.display_next_entry()
+        else:
+            self.category_frame.destroy()
+            self.category_frame=None
+    
+    def display_next_entry(self):
+        entry = self.pynance.get_most_recent_uncategorized_entry()
+        print(entry)
+        for widget in self.category_frame.winfo_children():
+            widget.destroy()
+            
+        if entry == None:
+            tk.Label(self.category_frame, text="Everything Categorized").grid(row=0, column=0)
+            return
+        
+#        but = tk.Button(self.category_frame, text="Shit")
+#        but.pack()
+        tk.Label(self.category_frame, text=entry.description + " " + str(entry.debit), font=("Arial", 12)).grid(row=0,column=0)
+        
+        sliders = Slider2(self.category_frame, entry, self.pynance.categories,width=500, height=50)
+#        sliders.set_financial_entry(entry)
+        sliders.grid(row=1,column=0)
+        
+    def open_file_dialog(self):
+        initial_path = os.path.dirname(os.path.abspath(__file__))
+        file_path = filedialog.askopenfilename(initialdir=initial_path, title="Select file to load...")
+        self.pynance.import_account_history(os.path.basename(file_path))
