@@ -193,6 +193,7 @@ class Slider2(Frame):
                 
                 slider.l_segment = segment 
                 slider.r_segment = new_seg
+                segment.locked = False
                 break
         
         self.update_labels_and_entries()
@@ -394,7 +395,7 @@ class Slider2(Frame):
                 rs_idx = 0  
                 all_segments = sorted(self.segments, key=lambda x: x.x_l)
                 for seg in all_segments[:-1]:
-                    if seg.locked == True:
+                    if seg.locked == True and seg is not segment:
                         continue
                     if seg is segment:
                         if seg.l_slider is None:
