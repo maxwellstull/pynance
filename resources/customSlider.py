@@ -69,7 +69,7 @@ class Segment():
         
         self.money_entry = Entry(self.frame, width=20, bg=self.color)
         self.money_entry.insert(0, "0")
-        self.money_entry.bind("<Return>", lambda e,s=self: self.parent.update_sliders_from_money_entry(e,s))
+        self.money_entry.bind("<Return>", lambda e,s=self: self.parent.update_sliders_from_dollar_entry(e,s))
         self.money_entry.grid(row=0,column=1)
         
         option_list = []
@@ -105,7 +105,7 @@ class Segment():
         else:
             self.x_r = self.parent.width - 25
         
-        self.percentage = round(((self.x_r - self.x_l) / (self.parent.width - 50))*100,1)
+        self.percentage = ((self.x_r - self.x_l) / (self.parent.width - 50))*100
         
 #        self.label_id = self.canvas.create_text(mid_x, self.parent.height/2, text=self.label_str)
         self.color_line_id = self.canvas.create_line(self.x_l, self.parent.height/2, self.x_r, self.parent.height/2, width=8, fill=self.color)
@@ -113,7 +113,7 @@ class Segment():
             self.lock_id = self.canvas.create_image(((self.x_r-self.x_l)/2) + self.x_l,self.parent.height/2,image=self.icon,anchor=CENTER)
 
         self.entry.delete(0,END)
-        self.entry.insert(0, f"{self.percentage}")
+        self.entry.insert(0, f"{round(self.percentage,1)}")
         dollars = round(self.parent.fin_entry.debit*self.percentage/100,2)
         self.money_entry.delete(0,END)
         self.money_entry.insert(0,f"${dollars}")
@@ -186,7 +186,6 @@ class Slider2(Frame):
         # need to split the segment
         for segment in self.segments:
             if segment.x_l < event.x and event.x < segment.x_r:
-                print("You clicked on segment:" + segment.color)
                 # clicked within this segment
                 new_seg = Segment(self, slider, segment.r_slider,self.colors[self.color_ctr])
                 new_seg.id = self.color_ctr
@@ -229,11 +228,14 @@ class Slider2(Frame):
             self.canvas.tag_raise(slider.number_id)
             
     def update_sliders_from_dollar_entry(self, event, segment):
-        pass        
-    
-        # before implementing this, fix all the duplicated stuff in update_sliders_from_perc_entry
-    
-    def update_sliders_from_perc_entry(self, event, segment):        
+        value = float(segment.money_entry.get().replace("$",""))
+        new_perc = (value/self.fin_entry.debit)*100
+        segment.entry.delete(0, END)
+        segment.entry.insert(0, f"{new_perc}")
+        
+        self.update_sliders_from_perc_entry( event, segment)             
+
+    def update_sliders_from_perc_entry(self, event, segment):   
         total_width = self.width - 50
         unlocked_segments = []
         for test_segment in self.segments:
@@ -339,8 +341,7 @@ class Slider2(Frame):
                 new_perc = float(segment.entry.get())
                 # sort segments from left to right 
                 unlocked_segments.sort(key = lambda x: x.x_l)
-#                for seg in unlocked_segments:
-#                    print(seg.x_l, seg.x_r)
+
                 s0 = unlocked_segments[0].percentage
                 s1 = unlocked_segments[1].percentage
                 s2 = unlocked_segments[2].percentage
@@ -353,7 +354,6 @@ class Slider2(Frame):
                 s0_new = s0 + (delta_perc * s0_prop / 100)
                 s1_new = s1 + (delta_perc * s1_prop / 100)
                 s2_new = s2 + (delta_perc * s2_prop / 100)
-                print(s0_new, s1_new, s2_new)
                 r0 = (s0_new * total_width/100)
                 r1 = (s1_new * total_width/100)
                 r2 = (s2_new * total_width/100)
@@ -362,7 +362,6 @@ class Slider2(Frame):
                 guy_idx = 0
                 all_segments = sorted(self.segments, key=lambda x: x.x_l)
                 for seg in all_segments[:-1]:
-                    print(segment.x_l)
                     if seg is segment:
                         if seg.l_slider is None:
                             seg.r_slider.move((float(segment.entry.get())*total_width/100) + 25)
