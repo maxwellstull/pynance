@@ -1,11 +1,12 @@
 import sys
 sys.path.append('resources')
 from customSlider import Slider2
+
 import json
 import csv
 import os 
 import math
-from objects import Entry
+from objects import Entry, CategoryInfo
 import tkinter as tk
 from tkinter import filedialog
 import datetime
@@ -122,8 +123,11 @@ class PynanceFramer():
         
         self.category_frame = None
         self.is_visible = False 
+        
+        self.current_entry = None
     def toggle_categorization(self):
         self.is_visible = not self.is_visible
+        
         if self.is_visible:
             self.category_frame = tk.Frame(self.root)
             self.category_frame.grid(row=1,column=0)
@@ -132,24 +136,37 @@ class PynanceFramer():
         else:
             self.category_frame.destroy()
             self.category_frame=None
-    
+        self.submit = tk.Button(self.root, text="Submit", command=self.submit)
+        self.submit.grid(row=2, column=0)
+    def submit(self):
+        if self.current_entry is not None:
+            self.current_entry.categorized=True
+            for seg in self.sliders.segments:
+                cat = CategoryInfo()
+                cat.supercategory = seg.supercategory_selected.get()
+                cat.category = seg.selected.get()
+                cat.percentage = seg.entry.get()
+                cat.total = seg.money_entry.get()
+                self.current_entry.categories.append(cat)
+        self.display_next_entry()
+        
+        
     def display_next_entry(self):
         entry = self.pynance.get_most_recent_uncategorized_entry()
         print(entry)
+        self.current_entry = entry
         for widget in self.category_frame.winfo_children():
             widget.destroy()
             
         if entry == None:
             tk.Label(self.category_frame, text="Everything Categorized").grid(row=0, column=0)
             return
-        
-#        but = tk.Button(self.category_frame, text="Shit")
-#        but.pack()
         tk.Label(self.category_frame, text=entry.description + " " + str(entry.debit), font=("Arial", 12)).grid(row=0,column=0)
         
-        sliders = Slider2(self.category_frame, entry, self.pynance.categories,width=500, height=50)
-#        sliders.set_financial_entry(entry)
-        sliders.grid(row=1,column=0)
+        self.sliders = Slider2(self.category_frame, entry, self.pynance.categories,width=500, height=50)
+        self.sliders.grid(row=1,column=0)
+        
+        
         
     def open_file_dialog(self):
         initial_path = os.path.dirname(os.path.abspath(__file__))

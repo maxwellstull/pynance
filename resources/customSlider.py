@@ -30,7 +30,7 @@ class Slider():
         
 class Segment():
     def __init__(self, parent, l_slider, r_slider, color):
-        self.frame = Frame()
+        self.frame = Frame(parent)
         
         self.parent = parent
         self.canvas = parent.canvas
@@ -160,15 +160,9 @@ class Slider2(Frame):
         seg.draw_self()
         self.segments.append(seg)
 
-#        self.grid(row=3,column=0)
-        
-
-
     def set_financial_entry(self, ent):
         self.fin_entry = ent   
         print(ent)
-
-        
 
     def add_slider(self, event):
         # Bypass this function if we've clicked on a slider

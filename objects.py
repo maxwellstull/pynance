@@ -44,10 +44,12 @@ class Entry():
     
     def __repr__(self):
         return """
+==========
 {bank} - {date}
 {desc}
 Debit: {db}
 Credit: {cr}
+==========
 """.format(bank = self.bank, date = self.date, desc = self.description, db=self.debit,cr=self.credit)
     
     def save_json(self):
