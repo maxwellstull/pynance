@@ -35,6 +35,8 @@ class Segment():
         self.parent = parent
         self.canvas = parent.canvas
        
+        self.id = None
+
         self.l_slider = l_slider
         self.r_slider = r_slider
         
@@ -152,6 +154,7 @@ class Slider2(Frame):
         self.categories = categories
         
         seg = Segment(self, None, None,self.colors[self.color_ctr])
+        seg.id = self.color_ctr
         self.color_ctr+=1
         seg.frame.grid(column=0, row=2)
         seg.draw_self()
@@ -186,6 +189,7 @@ class Slider2(Frame):
                 print("You clicked on segment:" + segment.color)
                 # clicked within this segment
                 new_seg = Segment(self, slider, segment.r_slider,self.colors[self.color_ctr])
+                new_seg.id = self.color_ctr
                 self.color_ctr+=1
                 if segment.r_slider:
                     segment.r_slider.l_segment = new_seg
@@ -252,33 +256,30 @@ class Slider2(Frame):
                     event.x = x_should_be
                     self.add_slider(event)
                     segment.locked = True
+            case 1:
+                # Functionality: remove equal percentage from unlocked segments
                 
-            case 5:
-                print("There are " + str(len(unlocked_segments)) + " unlocked")
                 old_perc = segment.percentage
                 new_perc = float(segment.entry.get())
-                delta_perc = old_perc - new_perc
+                
                 unlocked_segments.sort(key = lambda x: x.x_l)
                 
-                seg_percentages = []
-                for i in range(0, len(unlocked_segments)):
-                    seg_percentages.append(unlocked_segments[i].percentage)
-                seg_proportions = []
-                for i in range(0, len(unlocked_segments)):
-                    prop = seg_percentages[i] / (sum(seg_percentages)) * 100
-                    seg_proportions.append(prop)
+                s0 = unlocked_segments[0].percentage
                 
-                rs = []
-                #print(len(unlocked_segments))
-                for i in range(0, len(unlocked_segments)):
-                    seg_new_width = seg_percentages[i] + (delta_perc * seg_proportions[i] / 100)
-                    seg_r = seg_new_width * total_width / 100
-                    rs.append(seg_r)
-                                            
-                rs_idx = 0  
+                s0_prop = 100
+                
+                delta_perc = old_perc - new_perc
+                              
+                s0_new = s0 + (delta_perc * s0_prop / 100)
+                
+                r0 = (s0_new * total_width/100)
+                
+                guy_idx = 0
+                guys = [r0]
                 all_segments = sorted(self.segments, key=lambda x: x.x_l)
+                
                 for seg in all_segments[:-1]:
-                    if seg.locked == True and seg is not segment:
+                    if seg.locked is True:
                         continue
                     if seg is segment:
                         if seg.l_slider is None:
@@ -287,16 +288,94 @@ class Slider2(Frame):
                             seg.r_slider.move((float(segment.entry.get())*total_width/100) + seg.l_slider.x)
                     else:
                         if seg.l_slider is None:
-                            seg.r_slider.move(rs[rs_idx] + 25)
-                            rs_idx += 1                        
+                            seg.r_slider.move(guys[guy_idx] + 25)
+                            guy_idx += 1                        
                         else:
-                            seg.r_slider.move(seg.l_slider.x + rs[rs_idx])
-                            rs_idx += 1            
-            case _:
-#                segments = sorted(self.segments, key=lambda x: x.x_l)
-                print(self.segments)
+                            seg.r_slider.move(seg.l_slider.x + guys[guy_idx])
+                            guy_idx += 1  
+            case 2:
+                # Functionality: remove equal percentage from unlocked segments
                 
-                pass
+                old_perc = segment.percentage
+                new_perc = float(segment.entry.get())
+                
+                unlocked_segments.sort(key = lambda x: x.x_l)
+                
+                s0 = unlocked_segments[0].percentage
+                s1 = unlocked_segments[1].percentage
+                
+                s0_prop = s0 / (s0 + s1 )*100
+                s1_prop = s1 / (s0 + s1 )*100
+                
+                delta_perc = old_perc - new_perc
+                              
+                s0_new = s0 + (delta_perc * s0_prop / 100)
+                s1_new = s1 + (delta_perc * s1_prop / 100)  
+                
+                r0 = (s0_new * total_width/100)
+                r1 = (s1_new * total_width/100)
+                
+                guy_idx = 0
+                guys = [r0,r1]
+                all_segments = sorted(self.segments, key=lambda x: x.x_l)
+                
+                for seg in all_segments[:-1]:
+                    if seg.locked is True:
+                        continue
+                    if seg is segment:
+                        if seg.l_slider is None:
+                            seg.r_slider.move((float(segment.entry.get())*total_width/100) + 25)
+                        else:
+                            seg.r_slider.move((float(segment.entry.get())*total_width/100) + seg.l_slider.x)
+                    else:
+                        if seg.l_slider is None:
+                            seg.r_slider.move(guys[guy_idx] + 25)
+                            guy_idx += 1                        
+                        else:
+                            seg.r_slider.move(seg.l_slider.x + guys[guy_idx])
+                            guy_idx += 1
+            case 3:
+                old_perc = segment.percentage 
+                new_perc = float(segment.entry.get())
+                # sort segments from left to right 
+                unlocked_segments.sort(key = lambda x: x.x_l)
+#                for seg in unlocked_segments:
+#                    print(seg.x_l, seg.x_r)
+                s0 = unlocked_segments[0].percentage
+                s1 = unlocked_segments[1].percentage
+                s2 = unlocked_segments[2].percentage
+                
+                s0_prop = s0 / (s0 + s1 + s2)*100
+                s1_prop = s1 / (s0 + s1 + s2)*100
+                s2_prop = s2 / (s0 + s1 + s2)*100
+                
+                delta_perc = old_perc - new_perc
+                s0_new = s0 + (delta_perc * s0_prop / 100)
+                s1_new = s1 + (delta_perc * s1_prop / 100)
+                s2_new = s2 + (delta_perc * s2_prop / 100)
+                print(s0_new, s1_new, s2_new)
+                r0 = (s0_new * total_width/100)
+                r1 = (s1_new * total_width/100)
+                r2 = (s2_new * total_width/100)
+                guys = [r0,r1,r2]
+                
+                guy_idx = 0
+                all_segments = sorted(self.segments, key=lambda x: x.x_l)
+                for seg in all_segments[:-1]:
+                    print(segment.x_l)
+                    if seg is segment:
+                        if seg.l_slider is None:
+                            seg.r_slider.move((float(segment.entry.get())*total_width/100) + 25)
+                        else:
+                            seg.r_slider.move((float(segment.entry.get())*total_width/100) + seg.l_slider.x)
+                    else:
+                        if seg.l_slider is None:
+                            seg.r_slider.move(guys[guy_idx] + 25)
+                            guy_idx += 1                        
+                        else:
+                            seg.r_slider.move(seg.l_slider.x + guys[guy_idx])
+                            guy_idx += 1         
+            
         segment.locked = True
         self.update_labels_and_entries()
         
