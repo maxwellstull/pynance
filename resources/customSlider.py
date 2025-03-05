@@ -22,7 +22,7 @@ class Slider():
     def draw_self(self):
         self.id = self.canvas.create_oval(self.x - self.radius, self.y- self.radius, self.x + self.radius, self.y + self.radius,fill='cyan')
         #self.number_id = self.canvas.create_text(self.x, self.y, text=self.number)
-        self.canvas.tag_lower(self.number_id)
+        #self.canvas.tag_lower(self.number_id)
         return self.id
     
     def move(self, new_x):
@@ -222,7 +222,7 @@ class MultiSlideBar(Frame):
             segment.draw_self()
         for slider in self.sliders:
             self.canvas.tag_raise(slider.id)
-            self.canvas.tag_raise(slider.number_id)
+            #self.canvas.tag_raise(slider.number_id)
             
     def update_sliders_from_dollar_entry(self, event, segment):
         value = float(segment.money_entry.get().replace("$",""))
