@@ -1,6 +1,6 @@
 import sys
 sys.path.append('resources')
-from customSlider import Slider2
+from customSlider import MultiSlideBar
 
 import json
 import csv
@@ -163,7 +163,7 @@ class PynanceFramer():
             return
         tk.Label(self.category_frame, text=entry.description + " " + str(entry.debit), font=("Arial", 12)).grid(row=0,column=0)
         
-        self.sliders = Slider2(self.category_frame, entry, self.pynance.categories,width=500, height=50)
+        self.sliders = MultiSlideBar(self.category_frame, entry, self.pynance.categories,width=500, height=50)
         self.sliders.grid(row=1,column=0)
         
         

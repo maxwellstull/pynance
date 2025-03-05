@@ -11,22 +11,25 @@ class Slider():
         self.l_segment = None 
         self.r_segment = None
         self.number = number
-        self.number_id = None
+        #self.number_id = None
         
+    # Check if clicked on
     def check_hit(self, x):
         if self.x - self.radius <= x and x <= self.x + self.radius:
             return True 
         return False
     
     def draw_self(self):
-        self.id = self.canvas.create_oval(self.x - self.radius, self.y- self.radius, self.x + self.radius, self.y + self.radius,fill='blue')
-        self.number_id = self.canvas.create_text(self.x, self.y+20, text=self.number)
+        self.id = self.canvas.create_oval(self.x - self.radius, self.y- self.radius, self.x + self.radius, self.y + self.radius,fill='cyan')
+        #self.number_id = self.canvas.create_text(self.x, self.y, text=self.number)
+        self.canvas.tag_lower(self.number_id)
         return self.id
     
     def move(self, new_x):
         self.x = new_x
         self.canvas.coords(self.id, self.x - self.radius, self.y- self.radius, self.x + self.radius, self.y + self.radius)
-        self.canvas.coords(self.number_id, self.x, self.y+20)        
+        #self.canvas.coords(self.number_id, self.x, self.y)       
+
         
 class Segment():
     def __init__(self, parent, l_slider, r_slider, color):
@@ -125,7 +128,7 @@ class Segment():
     def __repr__(self):
         return "{x}--{pe}%--{xr}".format(x=self.x_l, pe=self.percentage, xr=self.x_r)
 
-class Slider2(Frame):
+class MultiSlideBar(Frame):
     OVAL_RADIUS = 10
     LINE_THICKNESS = 10
     
@@ -143,7 +146,7 @@ class Slider2(Frame):
         self.color_ctr = 0
         
         self.canvas = Canvas(self, height=height, width=width)
-        self.canvas.create_line(25, height/2, width-25, height/2, width=Slider2.LINE_THICKNESS,fill='deep sky blue')
+        self.canvas.create_line(25, height/2, width-25, height/2, width=MultiSlideBar.LINE_THICKNESS,fill='deep sky blue')
         self.canvas.create_rectangle(3,3,width-3,height-3,width=1)
         self.canvas.bind("<Button-1>", self.add_slider)
         self.canvas.grid(row=0,column=0)
@@ -172,7 +175,7 @@ class Slider2(Frame):
         if len(self.sliders) >=3:
             return
         
-        slider = Slider(self.canvas, Slider2.OVAL_RADIUS, event.x, self.height / 2, self.color_ctr)
+        slider = Slider(self.canvas, MultiSlideBar.OVAL_RADIUS, event.x, self.height / 2, self.color_ctr)
         slider_id = slider.draw_self()
         self.canvas.tag_bind(slider_id, "<B1-Motion>", lambda e, s=slider: self.move_slider(e,s))
         self.sliders.append(slider)
